@@ -13,7 +13,7 @@ To work on this project you need:
 - python 3.13+ - many ways to install it, probably best to use the [official installer](https://www.python.org/downloads/) or a version manager such as [pyenv](https://github.com/pyenv/pyenv)
 - poetry 2.1+ - official [installation guide](https://python-poetry.org/docs/#installing-with-the-official-installer)
 
-If you don't want to set up python on your local machine you can refer to the [`README.md`](../README.md) in the root of the repo containing instructions on spinning up the entire AdZ stack using docker. However at this stage it may not be ergonomic enough for heavy use, as it's mostly meant for running the components such as database and parts of the stack you're not working on and hence not changing often.
+If you don't want to set up python on your local machine you can refer to the [`README.md`](../README.md) in the root of the repo containing instructions on spinning up the entire project's stack using docker. However at this stage it may not be ergonomic enough for heavy use, as it's mostly meant for running the components such as database and parts of the stack you're not working on and hence not changing often.
 
 You will also need a postgres database and redis, which can be spun up locally using docker compose (`docker compose up -d`).
 

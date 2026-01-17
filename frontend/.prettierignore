@@ -1,0 +1,7 @@
+dist
+pnpm-lock.yaml
+*.md
+.pnpm-store
+/src/router/routes-tree.gen.ts
+coverage
+storybook-static

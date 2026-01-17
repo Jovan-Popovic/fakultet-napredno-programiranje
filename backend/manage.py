@@ -223,7 +223,7 @@ def main(args: list[str]) -> None:
             CeleryWorker,
             CeleryFlower,
         ],
-        description="Adz management commands",
+        description="Project management commands",
     ).execute(args)
 
 
