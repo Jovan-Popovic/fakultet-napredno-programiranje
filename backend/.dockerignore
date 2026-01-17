@@ -1,0 +1,6 @@
+# trigger build 0
+app.egg-info
+*.pyc
+.mypy_cache
+.coverage
+app/**/__pycache__

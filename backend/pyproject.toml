@@ -1,0 +1,186 @@
+[project]
+name = "fakultet-napredno-programiranje-backend"
+version = "0.1.0"
+description = ""
+authors = [
+  { name = "Balsa Strugar", email = "balsaworkstrugar@gmail.com" },
+  { name = "Jovan Popovic", email = "popovicjovan23@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+
+[tool.poetry]
+packages = [{ include = "app" }]
+
+[tool.poetry.scripts]
+start = "manage:poetry_start"
+test = "manage:poetry_test"
+typecheck = "manage:poetry_typecheck"
+migrate = "manage:poetry_migrate"
+celerybeat = "manage:poetry_celerybeat"
+celeryworker = "manage:poetry_celeryworker"
+celeryflower = "manage:poetry_celeryflower"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+fastapi = "^0.115.12"
+uvicorn = "^0.34.3"
+sqlalchemy = "^2.0.41"
+alembic = "^1.16.1"
+pydantic = "^2.11.5"
+pydantic-settings = "^2.9.1"
+psycopg = { extras = ["binary"], version = "^3.2.9" }
+python-dotenv = "^1.1.0"
+kink = "^0.8.1"
+pyhumps = "^3.8.0"
+python-jose = "^3.5.0"
+cryptography = "^45.0.5"
+python-multipart = "^0.0.20"
+requests = "^2.32.4"
+alembic-postgresql-enum = "^1.8.0"
+email-validator = "^2.2.0"
+boto3 = "^1.40.2"
+jinja2 = "^3.1.6"
+html2text = "^2025.4.15"
+dotenv = "^0.9.9"
+clickhouse-connect = "^0.8.18"
+celery = "^5.5.3"
+redis = "^6.4.0"
+emoji = "^2.15.0"
+polars = "^1.33.0"
+dateutils = "^0.6.12"
+pillow = "^11.1.0"
+flower = "^2.0.1"
+slowapi = "^0.1.9"
+scalar-fastapi = "^1.5.0"
+gspread = "^6.2.1"
+google-api-python-client = "^2.187.0"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.16.0"
+ruff = "^0.12.5"
+black = "^25.1.0"
+pytest = "^8.4.0"
+pytest-cov = "^6.1.1"
+testcontainers = "^4.10.0"
+# required for fastapi TestClient
+httpx = "^0.28.1"
+types-requests = "^2.32.4.20250611"
+types-python-jose = "^3.5.0.20250531"
+boto3-stubs = { extras = ["ec2", "lambda", "s3", "ses"], version = "^1.40.2" }
+celery-types = "^0.23.0"
+types-python-dateutil = "^2.9.0.20251008"
+google-api-python-client-stubs = "^1.31.0"
+
+[tool.poetry.group.prod]
+optional = true
+
+[tool.poetry.group.prod.dependencies]
+gunicorn = "^23.0.0"
+
+[tool.ruff]
+lint.select = [
+  "E",
+  "F",
+  "B",
+  "I",
+  "W",
+  "C90",
+  "UP",
+  "RUF",
+  "TID",
+  "FAST",
+  "TRY",
+  "A",
+  "C4",
+  "DTZ",
+  "PIE",
+  "T20",
+  "PT",
+  "RSE",
+  "RET",
+  "SLF",
+  "SIM",
+  "ARG",
+  "PTH",
+  "N",
+  "PERF",
+  "FURB",
+]
+lint.ignore = ["UP017", "E501", "A002", "TRY300", "SIM107"]
+target-version = "py313"
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"kink.inject".msg = "Use `app.utils.di.inject` instead"
+"sqlalchemy.Enum".msg = "Use `app.database.enum.Enum` instead"
+"sqlalchemy.DateTime".msg = "Use `sqlalchemy.TIMESTAMP` instead"
+
+[tool.ruff.lint.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 10
+max-complexity = 10
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["*Exception"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/clients/google/drive/types/drive.py" = ["N803"]
+
+[tool.mypy]
+exclude = [".venv"]
+mypy_path = "stubs"
+plugins = ["pydantic.mypy"]
+
+disable_error_code = "type-abstract" # DI error
+
+allow_untyped_globals = false
+strict_equality = true
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+disallow_untyped_calls = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+warn_return_any = true
+local_partial_types = true
+extra_checks = true
+strict_bytes = true
+enable_error_code = [
+  "redundant-self",
+  "deprecated",
+  "redundant-expr",
+  "possibly-undefined",
+  "truthy-bool",
+  "truthy-iterable",
+  "ignore-without-code",
+  "unused-awaitable",
+  "unimported-reveal",
+]
+
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+exclude_lines = [
+  "pragma: no cover",
+  "except ImportError",
+  "raise ImportError",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  'if __name__ == "__main__":',
+]

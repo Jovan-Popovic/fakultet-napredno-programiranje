@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "/",
+      "path": "./"
+    },
+    {
+      "path": "backend"
+    },
+    {
+      "path": "frontend"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "backend": true,
+      "frontend": true
+    },
+    "python.analysis.autoImportCompletions": true
+  }
+}
