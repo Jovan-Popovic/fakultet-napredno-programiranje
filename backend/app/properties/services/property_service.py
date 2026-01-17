@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from typing import Any, Protocol
+
+from app.properties.models.property import Property, PropertySource
+from app.properties.repositories import IPropertyRepository, PropertyFilters
+from app.properties.services.property_parser import IPropertyParser
+from app.utils.di import inject
+
+logger = logging.getLogger(__name__)
+
+
+class IPropertyService(Protocol):
+    """Protocol interface for property service."""
+
+    def get_property(self, property_id: int) -> Property | None:
+        """Get property by ID."""
+        ...
+
+    def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
+        """List properties with filters."""
+        ...
+
+    def save_scraped_property(
+        self, scraped_data: dict[str, Any], source: PropertySource
+    ) -> Property:
+        """Save single scraped property."""
+        ...
+
+    def bulk_save_scraped_properties(
+        self, scraped_data_list: list[dict[str, Any]], source: PropertySource
+    ) -> int:
+        """Bulk save scraped properties. Returns count of saved properties."""
+        ...
+
+
+@inject(alias=IPropertyService, singleton=True)
+class PropertyService(IPropertyService):
+    """
+    Service for property business logic.
+
+    Coordinates between parser and repository, transforms scraped data
+    into database format, and provides high-level property operations.
+    """
+
+    def __init__(
+        self,
+        repository: IPropertyRepository,
+        parser: IPropertyParser,
+    ):
+        self.repository = repository
+        self.parser = parser
+
+    def get_property(self, property_id: int) -> Property | None:
+        """
+        Get property by ID.
+
+        Args:
+            property_id: Property ID
+
+        Returns:
+            Property if found, None otherwise
+        """
+        return self.repository.get_by_id(property_id)
+
+    def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
+        """
+        List properties with filtering and pagination.
+
+        Args:
+            filters: PropertyFilters with filter criteria
+
+        Returns:
+            Tuple of (list of properties, total count)
+        """
+        return self.repository.list_properties(filters)
+
+    def _transform_scraped_data(
+        self, scraped_data: dict[str, Any], source: PropertySource
+    ) -> dict[str, Any]:
+        """
+        Transform scraped data into database format.
+
+        Args:
+            scraped_data: Raw scraped data with fields:
+                - grad: city name
+                - naslov: title
+                - cijena: price string
+                - kvadratura: area string
+                - broj_soba: rooms string
+                - tip: property type string
+                - lokacija: location
+                - link: unique URL
+            source: PropertySource enum
+
+        Returns:
+            Dictionary ready for database insertion
+        """
+        now = datetime.now(timezone.utc)
+
+        # Parse values
+        price_eur = self.parser.parse_price(scraped_data.get("cijena", ""))
+        area_sqm = self.parser.parse_area(scraped_data.get("kvadratura"))
+        rooms = self.parser.parse_rooms(scraped_data.get("broj_soba"))
+        property_type = self.parser.parse_property_type(scraped_data.get("tip"))
+
+        return {
+            "source": source,
+            "link": scraped_data["link"],
+            "city": scraped_data["grad"],
+            "location": scraped_data["lokacija"],
+            "title": scraped_data["naslov"],
+            "property_type": property_type,
+            # Raw values
+            "price_raw": scraped_data.get("cijena", ""),
+            "area_raw": scraped_data.get("kvadratura"),
+            "rooms_raw": scraped_data.get("broj_soba"),
+            # Parsed values
+            "price_eur": price_eur,
+            "area_sqm": area_sqm,
+            "rooms": rooms,
+            # Timestamps
+            "created_at": now,
+            "updated_at": now,
+        }
+
+    def save_scraped_property(
+        self, scraped_data: dict[str, Any], source: PropertySource
+    ) -> Property:
+        """
+        Save single scraped property.
+
+        Args:
+            scraped_data: Raw scraped data
+            source: PropertySource enum (ESTITOR or REALITICA)
+
+        Returns:
+            Saved Property
+        """
+        property_data = self._transform_scraped_data(scraped_data, source)
+        return self.repository.upsert(property_data)
+
+    def bulk_save_scraped_properties(
+        self, scraped_data_list: list[dict[str, Any]], source: PropertySource
+    ) -> int:
+        """
+        Bulk save scraped properties.
+
+        Args:
+            scraped_data_list: List of raw scraped data dictionaries
+            source: PropertySource enum (ESTITOR or REALITICA)
+
+        Returns:
+            Count of saved properties
+        """
+        if not scraped_data_list:
+            logger.info("No properties to save")
+            return 0
+
+        # Transform all scraped data
+        properties_data = [
+            self._transform_scraped_data(data, source) for data in scraped_data_list
+        ]
+
+        # Bulk upsert
+        count = self.repository.bulk_upsert(properties_data)
+        logger.info(
+            f"Saved {count} properties from {source.value} (total scraped: {len(scraped_data_list)})"
+        )
+        return count

@@ -3,12 +3,16 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from celery.schedules import crontab
+
 from app.celery.celery_app import celery_app
 from app.celery.decorators import beat_schedule
+from app.database.session_handler import db_session_handler
+from app.properties.models.property import PropertySource
 from app.properties.services.estitor_scraper import IEstitorScraper
+from app.properties.services.property_service import IPropertyService
 from app.properties.services.realitica_scraper import IRealiticaScraper
 from app.utils.di import get_from_di_container
-from celery.schedules import crontab
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task()
+@db_session_handler
 def scrape_estitor_city(city: str, city_slug: str) -> dict[str, Any]:
     """
     Scrape a single city from Estitor.
@@ -32,20 +37,25 @@ def scrape_estitor_city(city: str, city_slug: str) -> dict[str, Any]:
     """
     try:
         scraper = get_from_di_container(IEstitorScraper)
+        property_service = get_from_di_container(IPropertyService)
         logger.info(f"Starting Estitor scraper for {city}")
 
         listings = scraper.scrape_city(city, city_slug)
 
         logger.info(f"Successfully scraped {len(listings)} listings from {city}")
 
-        # TODO: Save listings to database once models are implemented
-        for listing in listings:
-            logger.debug(f"Listing: {listing['naslov']} - {listing['cijena']}")
+        # Save listings to database
+        saved_count = property_service.bulk_save_scraped_properties(
+            listings, PropertySource.ESTITOR
+        )
+
+        logger.info(f"Saved {saved_count} properties from {city} to database")
 
         return {
             "scraper": "estitor",
             "city": city,
-            "count": len(listings),
+            "scraped_count": len(listings),
+            "saved_count": saved_count,
             "status": "success",
         }
 
@@ -54,7 +64,8 @@ def scrape_estitor_city(city: str, city_slug: str) -> dict[str, Any]:
         return {
             "scraper": "estitor",
             "city": city,
-            "count": 0,
+            "scraped_count": 0,
+            "saved_count": 0,
             "status": "failed",
             "error": str(e),
         }
@@ -105,6 +116,7 @@ def scrape_all_estitor_cities() -> dict[str, Any]:
 
 
 @celery_app.task()
+@db_session_handler
 def scrape_realitica_city(city: str, city_slug: str) -> dict[str, Any]:
     """
     Scrape a single city from Realitica.
@@ -118,20 +130,25 @@ def scrape_realitica_city(city: str, city_slug: str) -> dict[str, Any]:
     """
     try:
         scraper = get_from_di_container(IRealiticaScraper)
+        property_service = get_from_di_container(IPropertyService)
         logger.info(f"Starting Realitica scraper for {city}")
 
         listings = scraper.scrape_city(city, city_slug)
 
         logger.info(f"Successfully scraped {len(listings)} listings from {city}")
 
-        # TODO: Save listings to database once models are implemented
-        for listing in listings:
-            logger.debug(f"Listing: {listing['naslov']} - {listing['cijena']}")
+        # Save listings to database
+        saved_count = property_service.bulk_save_scraped_properties(
+            listings, PropertySource.REALITICA
+        )
+
+        logger.info(f"Saved {saved_count} properties from {city} to database")
 
         return {
             "scraper": "realitica",
             "city": city,
-            "count": len(listings),
+            "scraped_count": len(listings),
+            "saved_count": saved_count,
             "status": "success",
         }
 
@@ -140,7 +157,8 @@ def scrape_realitica_city(city: str, city_slug: str) -> dict[str, Any]:
         return {
             "scraper": "realitica",
             "city": city,
-            "count": 0,
+            "scraped_count": 0,
+            "saved_count": 0,
             "status": "failed",
             "error": str(e),
         }

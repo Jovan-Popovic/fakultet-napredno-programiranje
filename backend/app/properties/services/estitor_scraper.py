@@ -6,10 +6,11 @@ import re
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
+
+from playwright.sync_api import Browser, ElementHandle, Page, sync_playwright
 
 from app.utils.di import inject
-from playwright.sync_api import Browser, ElementHandle, Page, sync_playwright
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +22,7 @@ class IEstitorScraper(Protocol):
         """Scrape all property listings for a single city from Estitor."""
         ...
 
-    def parse_listing(
-        self, element: ElementHandle, city: str
-    ) -> dict[str, Any] | None:
+    def parse_listing(self, element: ElementHandle, city: str) -> dict[str, Any] | None:
         """Parse a single Estitor listing element."""
         ...
 
@@ -42,7 +41,7 @@ class EstitorScraper(IEstitorScraper):
     """
 
     BASE_URL = "https://estitor.com"
-    CITIES: dict[str, str] = {
+    CITIES: ClassVar = {
         "Tivat": "grad-tivat",
         "Podgorica": "grad-podgorica",
         "Budva": "grad-budva",
@@ -73,7 +72,7 @@ class EstitorScraper(IEstitorScraper):
         self.seen_links: set[str] = set()
 
     @contextmanager
-    def _create_browser(self) -> Generator[Browser, None, None]:
+    def _create_browser(self) -> Generator[Browser]:
         """Context manager for browser instance."""
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=self.HEADLESS)
@@ -83,7 +82,7 @@ class EstitorScraper(IEstitorScraper):
                 browser.close()
 
     @contextmanager
-    def _create_page(self) -> Generator[Page, None, None]:
+    def _create_page(self) -> Generator[Page]:
         """Context manager for page instance."""
         with self._create_browser() as browser:
             page = browser.new_page()
@@ -170,13 +169,13 @@ class EstitorScraper(IEstitorScraper):
 
         if "garsonjera" in text_lower:
             return "Garsonjera"
-        elif "stan" in text_lower:
+        if "stan" in text_lower:
             return "Stan"
-        elif "kuća" in text_lower or "kuca" in text_lower:
+        if "kuća" in text_lower or "kuca" in text_lower:
             return "Kuća"
-        elif "poslovni prostor" in text_lower:
+        if "poslovni prostor" in text_lower:
             return "Poslovni prostor"
-        elif "zemljište" in text_lower or "plac" in text_lower:
+        if "zemljište" in text_lower or "plac" in text_lower:
             return "Zemljište"
 
         return None

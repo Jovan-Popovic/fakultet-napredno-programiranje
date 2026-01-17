@@ -6,10 +6,11 @@ import re
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
+
+from playwright.sync_api import Browser, Locator, Page, sync_playwright
 
 from app.utils.di import inject
-from playwright.sync_api import Browser, Locator, Page, sync_playwright
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class RealiticaScraper(IRealiticaScraper):
         "&type%5B%5D=&price-min=&price-max="
         "&since-day=p-anytime&qob=p-default&qry=&lng=hr"
     )
-    CITIES: dict[str, str] = {
+    CITIES: ClassVar = {
         "Andrijevica": "Andrijevica",
         "Bar": "Bar",
         "Berane": "Berane",
@@ -83,7 +84,7 @@ class RealiticaScraper(IRealiticaScraper):
         self.seen_links: set[str] = set()
 
     @contextmanager
-    def _create_browser(self) -> Generator[Browser, None, None]:
+    def _create_browser(self) -> Generator[Browser]:
         """Context manager for browser instance."""
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=self.HEADLESS)
@@ -93,7 +94,7 @@ class RealiticaScraper(IRealiticaScraper):
                 browser.close()
 
     @contextmanager
-    def _create_page(self) -> Generator[Page, None, None]:
+    def _create_page(self) -> Generator[Page]:
         """Context manager for page instance."""
         with self._create_browser() as browser:
             page = browser.new_page()
@@ -201,7 +202,9 @@ class RealiticaScraper(IRealiticaScraper):
         logger.info(f"Completed scraping {city}: {len(results)} listings found")
         return results
 
-    def parse_listing(self, div: Locator, city: str) -> dict[str, Any] | None:
+    def parse_listing(  # noqa: C901
+        self, div: Locator, city: str
+    ) -> dict[str, Any] | None:
         """
         Parse a single Realitica listing element.
 
@@ -306,9 +309,9 @@ class RealiticaScraper(IRealiticaScraper):
 
         if "stan" in title_lower:
             return "Stan"
-        elif "kuća" in title_lower:
+        if "kuća" in title_lower:
             return "Kuća"
-        elif "zemljište" in title_lower or "plac" in title_lower:
+        if "zemljište" in title_lower or "plac" in title_lower:
             return "Zemljište"
 
         return ""
