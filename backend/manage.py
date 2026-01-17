@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import sys
-import time
 from argparse import ArgumentParser
 from logging import INFO, basicConfig
 from pathlib import Path
 from typing import Any, ClassVar
 
+from dotenv import load_dotenv
+
 from app.config.settings import DBSettings, Settings
 from app.database.import_sqlalchemy_models import load_all_models
 from app.utils import logging
-from app.utils.di import add_to_di_container, get_from_di_container
-from dotenv import load_dotenv
+from app.utils.di import add_to_di_container
 
 logger = logging.getLogger(__name__)
 

@@ -17,3 +17,8 @@ class DBSettings(BaseSettings):
 
 class Settings(DBSettings):
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    # Celery configuration
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    SENTINEL_MASTER_NAME: str = "mymaster"

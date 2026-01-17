@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import importlib
-import os
 from logging import getLogger
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from celery import Celery, Task, signals
+from dotenv import load_dotenv
+
 from app.celery.decorators import get_beat_schedule
 from app.celery.serializers import register_pydantic_serializer
 from app.config.settings import DBSettings, Settings
 from app.database.import_sqlalchemy_models import load_all_models
+from app.properties.services import estitor_scraper, realitica_scraper  # noqa: F401
 from app.utils.di import add_to_di_container
 from app.utils.logging import set_up_logging
-from celery import Celery, Task, signals
-from dotenv import load_dotenv
 
 logger = getLogger(__name__)
 

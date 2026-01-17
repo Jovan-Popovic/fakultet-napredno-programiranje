@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import logging
-from typing import Annotated
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config.settings import Settings
 from app.database.import_sqlalchemy_models import load_all_models
-from app.database.session_factory import ISessionFactory
-from app.database.session_handler import db_session_handler
 from app.routes import api_router
 from app.utils.di import get_from_di_container
 from app.utils.exceptions import (
@@ -18,13 +17,9 @@ from app.utils.exceptions import (
     ServerException,
     UnauthenticatedException,
 )
-from fastapi import Depends, FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
-from sqlalchemy import text
 
 
-def add_exception_handlers(app: FastAPI, settings: Settings) -> None:  # noqa: C901
+def add_exception_handlers(app: FastAPI, settings: Settings) -> None:
     @app.exception_handler(NotFoundException)
     def not_found_exception_handler(
         _request: Request, exc: NotFoundException
