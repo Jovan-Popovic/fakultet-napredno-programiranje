@@ -77,12 +77,12 @@ export default defineConfig(async ({ mode, command }) => {
     },
     server: {
       // Proxy configuration - use this when the app is started without backend and frontend on Docker.
-      proxy: {
+      /* proxy: {
         "/api": {
           target: "http://0.0.0.0:8000",
           changeOrigin: false,
         },
-      },
+      }, */
     },
   };
 });
