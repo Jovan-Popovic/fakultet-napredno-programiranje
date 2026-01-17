@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "ignore": ["dist/**", "storybook-static/**", "coverage/**", "node_modules/**"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [],
+  "ignoreBinaries": [],
+  "workspaces": {
+    ".": {
+      "entry": ["src/main.tsx"],
+      "project": ["src/**/*.{ts,tsx,js,jsx}"],
+      "ignore": []
+    }
+  }
+}

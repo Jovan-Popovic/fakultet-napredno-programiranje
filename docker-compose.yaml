@@ -1,0 +1,112 @@
+name: fakultet-napredno-programiranje
+
+services:
+  db:
+    image: public.ecr.aws/docker/library/postgres:17.5-bookworm
+    container_name: fakultet-napredno-programiranje-db
+    restart: always
+    init: true
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+    command: ["postgres", "-c", "log_statement=all"]
+
+  redis:
+    container_name: fakultet-napredno-programiranje-redis
+    image: redis:8-alpine
+    ports:
+      - "6380:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data/redis
+
+  backend:
+    <<: &backend
+      image: fakultet-napredno-programiranje-backend
+      build:
+        context: backend
+        dockerfile: docker/dev.Dockerfile
+      restart: always
+      init: true
+      profiles: ["app", "backend"]
+      volumes:
+        - ./backend:/app
+        - backend-venv:/app/.venv
+      depends_on:
+        db:
+          condition: service_healthy
+    container_name: fakultet-napredno-programiranje-backend
+    command: [poetry, run, start, --host, "0.0.0.0"]
+    ports:
+      - "8000:8000"
+
+  celery-worker:
+    <<: *backend
+    container_name: fakultet-napredno-programiranje-celery-worker
+    profiles: ["app", "backend", "celery"]
+    command:
+      [
+        poetry,
+        run,
+        celery,
+        -A,
+        "app.celery.celery_app:celery_app",
+        worker,
+        -l,
+        info,
+      ]
+
+  celery-beat-scheduler:
+    <<: *backend
+    container_name: fakultet-napredno-programiranje-celery-beat
+    profiles: ["app", "backend", "celery"]
+    command:
+      [
+        poetry,
+        run,
+        celery,
+        -A,
+        "app.celery.celery_app:celery_app",
+        beat,
+        -l,
+        info,
+      ]
+
+  celery-flower:
+    <<: *backend
+    container_name: fakultet-napredno-programiranje-celery-flower
+    profiles: ["app", "backend", "celery"]
+    command:
+      [poetry, run, celery, -A, "app.celery.celery_app:celery_app", flower]
+    ports:
+      - "5555:5555"
+
+  frontend:
+    container_name: fakultet-napredno-programiranje-frontend
+    build:
+      context: frontend
+      dockerfile: dev.Dockerfile
+    init: true
+    profiles: ["app", "frontend"]
+    command: [pnpm, dev, --host, 0.0.0.0]
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+      - frontend-pnpm-store:/app/.pnpm-store
+    ports:
+      - "5173:5173"
+
+volumes:
+  db-data:
+  backend-venv:
+  frontend-node-modules:
+  frontend-pnpm-store:
+  redis-data:
