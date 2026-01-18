@@ -69,3 +69,13 @@ export type GetCitiesResponseRecord = {
 export type GetPlatformsResponseRecord = {
   platforms: Array<"estitor" | "realitica">;
 };
+
+/**
+ * Export format type
+ */
+export type ExportFormat = "json" | "csv";
+
+/**
+ * Request record for exporting properties to CSV
+ */
+export type ExportPropertiesRequestRecord = PropertyListFiltersRecord;

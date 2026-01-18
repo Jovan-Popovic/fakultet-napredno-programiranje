@@ -86,7 +86,7 @@ export const PropertiesList: FC = () => {
 
       <div
         className={joinClasses(
-          "relative rounded-xl bg-white dark:from-gray-900/50 dark:to-gray-800/50",
+          "relative rounded-xl bg-white hover:shadow-xl dark:border dark:border-gray-700 dark:bg-gray-900/80",
           "p-6 transition-all duration-300"
         )}
       >

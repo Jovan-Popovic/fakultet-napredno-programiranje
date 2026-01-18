@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import HTTPException, Query
+from fastapi.responses import StreamingResponse
 
 from app.database.session_handler import DBAPIRouter
 from app.properties.models.property import PropertySource, PropertyType
@@ -22,8 +23,12 @@ logger = logging.getLogger(__name__)
 router = DBAPIRouter(prefix="/properties", tags=["Properties"])
 
 
-@router.get("", response_model=PropertyListResponse)
+@router.get("", response_model=None)
 def list_properties(
+    format: Annotated[
+        Literal["json", "csv"],
+        Query(description="Response format (json or csv)"),
+    ] = "json",
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
     size: Annotated[int, Query(ge=1, le=500, description="Items per page")] = 50,
     cities: Annotated[
@@ -69,9 +74,9 @@ def list_properties(
             description="Search in title and location",
         ),
     ] = None,
-) -> PropertyListResponse:
+) -> PropertyListResponse | StreamingResponse:
     """
-    List property listings with filtering and pagination.
+    List property listings with filtering and pagination, or export to CSV.
 
     Supports filtering by:
     - Cities (multiple)
@@ -82,7 +87,11 @@ def list_properties(
     - Room count (multiple)
     - Full-text search in title and location
 
-    Results are paginated and sorted by newest first.
+    Format options:
+    - json (default): Returns paginated JSON response
+    - csv: Returns CSV file for download with all matching properties
+
+    Results are sorted by newest first.
     """
     service = get_from_di_container(IPropertyService)
 
@@ -101,7 +110,16 @@ def list_properties(
         size=size,
     )
 
-    # Get properties
+    # Handle CSV export
+    if format == "csv":
+        csv_buffer, filename = service.export_properties(filters)
+        return StreamingResponse(
+            csv_buffer,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    # Handle JSON response (default)
     properties, total = service.list_properties(filters)
 
     # Build response

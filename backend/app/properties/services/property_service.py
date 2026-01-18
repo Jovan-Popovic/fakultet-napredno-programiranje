@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Any, Protocol
 
+from fastapi import HTTPException
+
 from app.properties.models.property import Property, PropertySource
-from app.properties.repositories import IPropertyRepository, PropertyFilters
+from app.properties.repositories import (
+    EXPORT_LIMIT,
+    IPropertyRepository,
+    PropertyFilters,
+)
+from app.properties.services.csv_export_service import ICSVExportService
 from app.properties.services.property_parser import IPropertyParser
 from app.utils.di import inject
 
@@ -21,6 +29,10 @@ class IPropertyService(Protocol):
 
     def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
         """List properties with filters."""
+        ...
+
+    def export_properties(self, filters: PropertyFilters) -> tuple[BytesIO, str]:
+        """Export properties to CSV. Returns (csv_buffer, filename)."""
         ...
 
     def get_unique_cities(self) -> list[str]:
@@ -57,9 +69,11 @@ class PropertyService(IPropertyService):
         self,
         repository: IPropertyRepository,
         parser: IPropertyParser,
+        csv_export_service: ICSVExportService,
     ):
         self.repository = repository
         self.parser = parser
+        self.csv_export_service = csv_export_service
 
     def get_property(self, property_id: int) -> Property | None:
         """
@@ -84,6 +98,38 @@ class PropertyService(IPropertyService):
             Tuple of (list of properties, total count)
         """
         return self.repository.list_properties(filters)
+
+    def export_properties(self, filters: PropertyFilters) -> tuple[BytesIO, str]:
+        """
+        Export properties to CSV format.
+
+        Args:
+            filters: PropertyFilters with filter criteria
+
+        Returns:
+            Tuple of (csv_buffer, filename)
+
+        Raises:
+            HTTPException: If result count exceeds EXPORT_LIMIT
+        """
+        properties, total_count = self.repository.list_all_properties(filters)
+
+        # Check if total count exceeds limit
+        if total_count > EXPORT_LIMIT:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Export limited to {EXPORT_LIMIT:,} properties. "
+                f"Please refine your filters. Found {total_count:,} matching properties.",
+            )
+
+        # Generate CSV
+        csv_buffer = self.csv_export_service.export_properties_to_csv(properties)
+
+        # Generate filename
+        filename = self.csv_export_service.generate_filename(filters)
+
+        logger.info(f"Exported {len(properties)} properties as {filename}")
+        return csv_buffer, filename
 
     def get_unique_cities(self) -> list[str]:
         """

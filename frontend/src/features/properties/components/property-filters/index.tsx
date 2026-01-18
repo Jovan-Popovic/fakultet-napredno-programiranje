@@ -1,4 +1,4 @@
-import { ChevronDown, Filter, MapPin, Search } from "lucide-react";
+import { ChevronDown, DownloadIcon, Filter, MapPin, Search } from "lucide-react";
 import type { ChangeEvent, FC, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select/basic";
 import type { SelectOption } from "@/components/ui/select/common/types/options";
 import { Span } from "@/components/ui/typography/span";
-import { useCities, usePlatforms } from "@/queries/properties";
+import { useCities, useExportProperties, usePlatforms } from "@/queries/properties";
 import type { PropertyListFiltersRecord } from "@/services/properties/types";
 import { classNameManager } from "@/utils/css";
 
@@ -43,6 +43,7 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
 
   const { data: citiesData, isLoading: isCitiesLoading } = useCities();
   const { data: platformsData, isLoading: isPlatformsLoading } = usePlatforms();
+  const { mutate: exportProperties, isPending: isExporting } = useExportProperties();
 
   const cityOptions: SelectOption[] = useMemo(
     () => (citiesData?.cities || []).map((city) => ({ value: city, label: city })),
@@ -163,6 +164,30 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
     setAreaError("");
     onFiltersChange({});
     onRefresh?.();
+  };
+
+  const handleExport = (): void => {
+    if (!validateRanges()) {
+      return;
+    }
+
+    const filters: PropertyListFiltersRecord = {};
+
+    if (search) filters.search = search;
+    if (selectedCities.length > 0) {
+      filters.cities = selectedCities.map((city) => city.value as string);
+    }
+
+    if (selectedPlatforms.length > 0) {
+      filters.sources = selectedPlatforms.map((platform) => platform.value as string);
+    }
+
+    if (minPrice) filters.minPrice = Number(minPrice);
+    if (maxPrice) filters.maxPrice = Number(maxPrice);
+    if (minArea) filters.minArea = Number(minArea);
+    if (maxArea) filters.maxArea = Number(maxArea);
+
+    exportProperties(filters);
   };
 
   return (
@@ -364,7 +389,7 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 type="submit"
                 variant="solid"
@@ -377,6 +402,17 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
               </Button>
               <Button type="button" variant="outline" onClick={handleReset} disabled={isLoading}>
                 Reset
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || !!priceError || !!areaError}
+                loading={isExporting}
+                className="gap-2"
+                icon={DownloadIcon}
+              >
+                Export CSV
               </Button>
             </div>
           </div>

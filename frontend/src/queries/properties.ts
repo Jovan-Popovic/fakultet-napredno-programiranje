@@ -4,22 +4,25 @@
  * @description
  * Provides React Query hooks for interacting with properties service.
  */
-import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import { type UseMutationResult, type UseQueryResult, useMutation, useQuery } from "@tanstack/react-query";
 
 import type { QueryOptionsRecord } from "./types/query";
 
 import type { ApiErrorResponseRecord } from "@/api/types/errors";
+import { useNotifications } from "@/components/ui/notifications/context";
 import { ReactQueryKeys } from "@/queries/keys/queries";
 import { propertiesService } from "@/services/properties";
 import type {
+  ExportPropertiesRequestRecord,
   GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
   GetPlatformsResponseRecord,
   GetPropertyResponseRecord,
 } from "@/services/properties/types";
+import { fileManager } from "@/utils/file";
 
-const { getPaginatedProperties, getProperty, getCities, getPlatforms } = propertiesService;
+const { getPaginatedProperties, getProperty, getCities, getPlatforms, exportPropertiesToCSV } = propertiesService;
 
 export const usePaginatedProperties = (
   data: GetPaginatedPropertiesRequestRecord,
@@ -65,3 +68,36 @@ export const usePlatforms = (
     staleTime: 1000 * 60 * 60, // 1 hour
     ...options,
   });
+
+export const useExportProperties = (): UseMutationResult<
+  void,
+  ApiErrorResponseRecord,
+  ExportPropertiesRequestRecord
+> => {
+  const { success, error } = useNotifications();
+
+  return useMutation({
+    mutationFn: async (filters: ExportPropertiesRequestRecord) => {
+      const blob = await exportPropertiesToCSV(filters);
+
+      // Generate filename from response headers or fallback
+      const timestamp = new Date().toISOString().split("T")[0].replace(/-/g, "");
+      const filename = `properties_export_${timestamp}.csv`;
+
+      // Trigger download
+      fileManager.downloadBlob(blob, filename);
+    },
+    onSuccess: () => {
+      success({ message: "Properties exported successfully" });
+    },
+    onError: (err) => {
+      const errorMessage =
+        typeof err.detail === "string"
+          ? err.detail
+          : "Failed to export properties. Please try again.";
+      error({
+        message: errorMessage,
+      });
+    },
+  });
+};

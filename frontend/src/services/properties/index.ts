@@ -1,4 +1,5 @@
 import type {
+  ExportPropertiesRequestRecord,
   GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
@@ -46,6 +47,14 @@ export type PropertiesServiceType = {
    * @returns {Promise<GetPlatformsResponseRecord>} A promise to the list of platforms.
    */
   getPlatforms(): Promise<GetPlatformsResponseRecord>;
+
+  /**
+   * Exports properties to CSV format based on filters.
+   *
+   * @param {ExportPropertiesRequestRecord} data - Filters for properties to export.
+   * @returns {Promise<Blob>} A promise to the CSV file as a Blob.
+   */
+  exportPropertiesToCSV(data: ExportPropertiesRequestRecord): Promise<Blob>;
 };
 
 class PropertiesService implements PropertiesServiceType {
@@ -72,6 +81,13 @@ class PropertiesService implements PropertiesServiceType {
   async getPlatforms(): Promise<GetPlatformsResponseRecord> {
     return await callApi({
       url: `/properties/platforms`,
+    });
+  }
+
+  async exportPropertiesToCSV(data: ExportPropertiesRequestRecord): Promise<Blob> {
+    return await callApi({
+      url: `/properties${getQueryString({ ...data, format: "csv" })}`,
+      responseType: "blob",
     });
   }
 }

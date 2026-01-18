@@ -14,6 +14,9 @@ from app.utils.di import inject
 
 logger = logging.getLogger(__name__)
 
+# Export limit to prevent server overload
+EXPORT_LIMIT = 50_000
+
 
 @dataclass
 class PropertyFilters:
@@ -41,6 +44,12 @@ class IPropertyRepository(Protocol):
 
     def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
         """List properties with filtering and pagination. Returns (items, total_count)."""
+        ...
+
+    def list_all_properties(
+        self, filters: PropertyFilters
+    ) -> tuple[list[Property], int]:
+        """List all properties matching filters (unpaginated, for exports). Returns (items, total_count)."""
         ...
 
     def get_unique_cities(self) -> list[str]:
@@ -168,6 +177,44 @@ class PropertyRepository(IPropertyRepository):
         # Execute query
         properties = list(self.session.execute(stmt).scalars().all())
 
+        return properties, total_count
+
+    def list_all_properties(
+        self, filters: PropertyFilters
+    ) -> tuple[list[Property], int]:
+        """
+        List all properties matching filters (unpaginated, for exports).
+
+        Args:
+            filters: PropertyFilters with filter criteria (page/size ignored)
+
+        Returns:
+            Tuple of (list of properties, total count)
+        """
+        # Build base query
+        stmt = select(Property).where(Property.deleted_at.is_(None))
+
+        # Apply filters
+        conditions = self._build_filter_conditions(filters)
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
+
+        # Get total count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_count = self.session.execute(count_stmt).scalar() or 0
+
+        # Apply sorting (newest first)
+        stmt = stmt.order_by(Property.created_at.desc())
+
+        # Apply export limit
+        stmt = stmt.limit(EXPORT_LIMIT)
+
+        # Execute query
+        properties = list(self.session.execute(stmt).scalars().all())
+
+        logger.info(
+            f"Fetched {len(properties)} properties for export (total: {total_count})"
+        )
         return properties, total_count
 
     def get_unique_cities(self) -> list[str]:
