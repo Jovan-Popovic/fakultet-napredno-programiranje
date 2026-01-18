@@ -15,10 +15,11 @@ import type {
   GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
+  GetPlatformsResponseRecord,
   GetPropertyResponseRecord,
 } from "@/services/properties/types";
 
-const { getPaginatedProperties, getProperty, getCities } = propertiesService;
+const { getPaginatedProperties, getProperty, getCities, getPlatforms } = propertiesService;
 
 export const usePaginatedProperties = (
   data: GetPaginatedPropertiesRequestRecord,
@@ -49,6 +50,17 @@ export const useCities = (
   useQuery({
     queryKey: [ReactQueryKeys.PROPERTIES, "cities"],
     queryFn: async () => await getCities(),
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    ...options,
+  });
+
+export const usePlatforms = (
+  options?: QueryOptionsRecord<GetPlatformsResponseRecord, ApiErrorResponseRecord>
+): UseQueryResult<GetPlatformsResponseRecord, ApiErrorResponseRecord> =>
+  useQuery({
+    queryKey: [ReactQueryKeys.PROPERTIES, "platforms"],
+    queryFn: async () => await getPlatforms(),
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 60, // 1 hour
     ...options,

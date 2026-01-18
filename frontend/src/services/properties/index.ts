@@ -2,6 +2,7 @@ import type {
   GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
+  GetPlatformsResponseRecord,
   GetPropertyResponseRecord,
 } from "./types";
 
@@ -38,6 +39,13 @@ export type PropertiesServiceType = {
    * @returns {Promise<GetCitiesResponseRecord>} A promise to the list of cities.
    */
   getCities(): Promise<GetCitiesResponseRecord>;
+
+  /**
+   * Retrieves all available platforms/sources.
+   *
+   * @returns {Promise<GetPlatformsResponseRecord>} A promise to the list of platforms.
+   */
+  getPlatforms(): Promise<GetPlatformsResponseRecord>;
 };
 
 class PropertiesService implements PropertiesServiceType {
@@ -58,6 +66,12 @@ class PropertiesService implements PropertiesServiceType {
   async getCities(): Promise<GetCitiesResponseRecord> {
     return await callApi({
       url: `/properties/cities`,
+    });
+  }
+
+  async getPlatforms(): Promise<GetPlatformsResponseRecord> {
+    return await callApi({
+      url: `/properties/platforms`,
     });
   }
 }

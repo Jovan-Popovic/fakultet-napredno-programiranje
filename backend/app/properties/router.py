@@ -10,6 +10,7 @@ from app.properties.models.property import PropertySource, PropertyType
 from app.properties.repositories import PropertyFilters
 from app.properties.schemas import (
     CitiesResponse,
+    PlatformsResponse,
     PropertyListResponse,
     PropertyResponse,
 )
@@ -123,6 +124,19 @@ def get_cities() -> CitiesResponse:
     service = get_from_di_container(IPropertyService)
     cities = service.get_unique_cities()
     return CitiesResponse(cities=cities)
+
+
+@router.get("/platforms", response_model=PlatformsResponse)
+def get_platforms() -> PlatformsResponse:
+    """
+    Get all available platforms/sources.
+
+    Returns a list of all PropertySource enum values.
+    Useful for populating filter dropdowns.
+    """
+    service = get_from_di_container(IPropertyService)
+    platforms = service.get_available_platforms()
+    return PlatformsResponse(platforms=platforms)
 
 
 @router.get("/{property_id}", response_model=PropertyResponse)

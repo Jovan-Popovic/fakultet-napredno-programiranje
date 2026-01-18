@@ -125,3 +125,9 @@ class CitiesResponse(CamelCaseModel):
     """Response schema for cities list."""
 
     cities: list[str]
+
+
+class PlatformsResponse(CamelCaseModel):
+    """Response schema for platforms/sources list."""
+
+    platforms: list[PropertySource]

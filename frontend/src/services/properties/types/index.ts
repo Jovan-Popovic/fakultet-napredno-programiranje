@@ -62,3 +62,10 @@ export type GetPropertyResponseRecord = PropertyResponseRecord;
 export type GetCitiesResponseRecord = {
   cities: string[];
 };
+
+/**
+ * Response record for platforms list
+ */
+export type GetPlatformsResponseRecord = {
+  platforms: Array<"estitor" | "realitica">;
+};

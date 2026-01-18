@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select/basic";
 import type { SelectOption } from "@/components/ui/select/common/types/options";
 import { Span } from "@/components/ui/typography/span";
-import { useCities } from "@/queries/properties";
+import { useCities, usePlatforms } from "@/queries/properties";
 import type { PropertyListFiltersRecord } from "@/services/properties/types";
 import { classNameManager } from "@/utils/css";
 
@@ -33,6 +33,7 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
   const [isOpen, setIsOpen] = useState(true);
   const [search, setSearch] = useState(initialFilters.search || "");
   const [selectedCities, setSelectedCities] = useState<SelectOption[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SelectOption[]>([]);
   const [minPrice, setMinPrice] = useState(initialFilters.minPrice?.toString() || "");
   const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice?.toString() || "");
   const [minArea, setMinArea] = useState(initialFilters.minArea?.toString() || "");
@@ -41,10 +42,20 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
   const [areaError, setAreaError] = useState<string>("");
 
   const { data: citiesData, isLoading: isCitiesLoading } = useCities();
+  const { data: platformsData, isLoading: isPlatformsLoading } = usePlatforms();
 
   const cityOptions: SelectOption[] = useMemo(
     () => (citiesData?.cities || []).map((city) => ({ value: city, label: city })),
     [citiesData]
+  );
+
+  const platformOptions: SelectOption[] = useMemo(
+    () =>
+      (platformsData?.platforms || []).map((platform) => ({
+        value: platform,
+        label: platform.charAt(0).toUpperCase() + platform.slice(1),
+      })),
+    [platformsData]
   );
 
   // Initialize selected cities from initial filters
@@ -57,16 +68,27 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
     }
   }, [initialFilters.cities, cityOptions]);
 
+  // Initialize selected platforms from initial filters
+  useEffect(() => {
+    if (initialFilters.sources && platformOptions.length > 0) {
+      const selected = platformOptions.filter((option) =>
+        initialFilters.sources?.includes(option.value as string)
+      );
+      setSelectedPlatforms(selected);
+    }
+  }, [initialFilters.sources, platformOptions]);
+
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (search) count++;
     if (selectedCities.length > 0) count++;
+    if (selectedPlatforms.length > 0) count++;
     if (minPrice) count++;
     if (maxPrice) count++;
     if (minArea) count++;
     if (maxArea) count++;
     return count;
-  }, [search, selectedCities, minPrice, maxPrice, minArea, maxArea]);
+  }, [search, selectedCities, selectedPlatforms, minPrice, maxPrice, minArea, maxArea]);
 
   const validateRanges = (): boolean => {
     let isValid = true;
@@ -116,6 +138,10 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
       filters.cities = selectedCities.map((city) => city.value as string);
     }
 
+    if (selectedPlatforms.length > 0) {
+      filters.sources = selectedPlatforms.map((platform) => platform.value as string);
+    }
+
     if (minPrice) filters.minPrice = Number(minPrice);
     if (maxPrice) filters.maxPrice = Number(maxPrice);
     if (minArea) filters.minArea = Number(minArea);
@@ -128,6 +154,7 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
   const handleReset = (): void => {
     setSearch("");
     setSelectedCities([]);
+    setSelectedPlatforms([]);
     setMinPrice("");
     setMaxPrice("");
     setMinArea("");
@@ -181,23 +208,24 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
 
         <CollapsibleContent>
           <div className="space-y-4 pt-2">
-            {/* Search and Cities Row */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</Span>
-                <div className="relative">
-                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                  <Input
-                    id="search"
-                    value={search}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                    placeholder="Search properties..."
-                    className="pl-9 transition-all duration-200"
-                    disabled={isLoading}
-                  />
-                </div>
+            {/* Search Row */}
+            <div className="space-y-2">
+              <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</Span>
+              <div className="relative">
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                <Input
+                  id="search"
+                  value={search}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                  placeholder="Search properties..."
+                  className="pl-9 transition-all duration-200"
+                  disabled={isLoading}
+                />
               </div>
+            </div>
 
+            {/* Cities and Platforms Row */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -213,6 +241,26 @@ export const PropertyFilters: FC<PropertyFiltersProps> = ({
                   placeholder="Select cities..."
                   isLoading={isCitiesLoading}
                   isDisabled={isLoading || isCitiesLoading}
+                  isClearable
+                  isSearchable
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Platforms
+                  </Span>
+                </div>
+                <Select
+                  isMulti
+                  options={platformOptions}
+                  value={selectedPlatforms}
+                  onChange={(selected) => setSelectedPlatforms(selected as SelectOption[])}
+                  placeholder="Select platforms..."
+                  isLoading={isPlatformsLoading}
+                  isDisabled={isLoading || isPlatformsLoading}
                   isClearable
                   isSearchable
                 />

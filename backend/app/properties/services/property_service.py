@@ -27,6 +27,10 @@ class IPropertyService(Protocol):
         """Get all unique cities from non-deleted properties."""
         ...
 
+    def get_available_platforms(self) -> list[PropertySource]:
+        """Get all available platforms/sources."""
+        ...
+
     def save_scraped_property(
         self, scraped_data: dict[str, Any], source: PropertySource
     ) -> Property:
@@ -89,6 +93,15 @@ class PropertyService(IPropertyService):
             List of unique city names sorted alphabetically
         """
         return self.repository.get_unique_cities()
+
+    def get_available_platforms(self) -> list[PropertySource]:
+        """
+        Get all available platforms/sources.
+
+        Returns:
+            List of all PropertySource enum values
+        """
+        return list(PropertySource)
 
     def _transform_scraped_data(
         self, scraped_data: dict[str, Any], source: PropertySource
