@@ -4,12 +4,11 @@ import logging
 import random
 import re
 import time
-from collections.abc import Generator
-from contextlib import contextmanager
 from typing import Any, ClassVar, Protocol
 
-from playwright.sync_api import Browser, Locator, Page, sync_playwright
+from playwright.sync_api import Locator, Page
 
+from app.properties.services.browser_pool import IBrowserPool
 from app.utils.di import inject
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class IRealiticaScraper(Protocol):
         ...
 
 
-@inject(alias=IRealiticaScraper, singleton=True)
+@inject(alias=IRealiticaScraper, singleton=False)
 class RealiticaScraper(IRealiticaScraper):
     """
     Scraper for Realitica.com property listings.
@@ -80,28 +79,9 @@ class RealiticaScraper(IRealiticaScraper):
     MIN_DELAY: float = 1.5
     MAX_DELAY: float = 4.0
 
-    def __init__(self) -> None:
+    def __init__(self, browser_pool: IBrowserPool) -> None:
+        self.browser_pool = browser_pool
         self.seen_links: set[str] = set()
-
-    @contextmanager
-    def _create_browser(self) -> Generator[Browser]:
-        """Context manager for browser instance."""
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=self.HEADLESS)
-            try:
-                yield browser
-            finally:
-                browser.close()
-
-    @contextmanager
-    def _create_page(self) -> Generator[Page]:
-        """Context manager for page instance."""
-        with self._create_browser() as browser:
-            page = browser.new_page()
-            try:
-                yield page
-            finally:
-                page.close()
 
     def _human_sleep(
         self, min_s: float | None = None, max_s: float | None = None
@@ -136,68 +116,76 @@ class RealiticaScraper(IRealiticaScraper):
 
         logger.info(f"Starting Realitica scrape for {city}")
 
-        with self._create_page() as page:
-            while True:
-                # Build URL with city parameter and pagination
-                if page_num == 1:
-                    url = f"{self.BASE_URL_PARAMS}&opa%5B%5D={city_slug}"
-                else:
-                    url = f"{self.BASE_URL_PARAMS}&opa%5B%5D={city_slug}&cur_page={page_num}"
+        with self.browser_pool.get_browser() as browser:
+            page = browser.new_page()
+            try:
+                while True:
+                    # Build URL with city parameter and pagination
+                    if page_num == 1:
+                        url = f"{self.BASE_URL_PARAMS}&opa%5B%5D={city_slug}"
+                    else:
+                        url = f"{self.BASE_URL_PARAMS}&opa%5B%5D={city_slug}&cur_page={page_num}"
 
-                logger.info(f"Scraping {city} - Page {page_num}: {url}")
+                    logger.info(f"Scraping {city} - Page {page_num}: {url}")
 
-                try:
-                    self._navigate_to_url(page, url)
+                    try:
+                        self._navigate_to_url(page, url)
 
-                    # Wait for page to load
-                    page.wait_for_timeout(4000)
+                        # Wait for page to load
+                        page.wait_for_timeout(4000)
 
-                    # Find all listing containers
-                    listings = page.locator('div:has(a[href*="listing"])')
-                    listing_count = listings.count()
+                        # Find all listing containers
+                        listings = page.locator('div:has(a[href*="listing"])')
+                        listing_count = listings.count()
 
-                    if listing_count == 0:
-                        logger.info(f"No listings found on page {page_num} for {city}")
-                        break
-
-                    logger.debug(
-                        f"Found {listing_count} listing elements on page {page_num}"
-                    )
-
-                    new_items = 0
-
-                    # Parse each listing
-                    for i in range(listing_count):
-                        try:
-                            div = listings.nth(i)
-                            parsed = self.parse_listing(div, city)
-
-                            if parsed and not self._is_duplicate_link(parsed["link"]):
-                                results.append(parsed)
-                                new_items += 1
-
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to parse listing {i} in {city}: {e}",
-                                exc_info=True,
+                        if listing_count == 0:
+                            logger.info(
+                                f"No listings found on page {page_num} for {city}"
                             )
-                            continue
+                            break
 
-                    logger.info(f"Page {page_num}: Found {new_items} new listings")
+                        logger.debug(
+                            f"Found {listing_count} listing elements on page {page_num}"
+                        )
 
-                    # If no new items were found, we've reached the end
-                    if new_items == 0:
-                        logger.info(f"No new listings on page {page_num}, stopping")
+                        new_items = 0
+
+                        # Parse each listing
+                        for i in range(listing_count):
+                            try:
+                                div = listings.nth(i)
+                                parsed = self.parse_listing(div, city)
+
+                                if parsed and not self._is_duplicate_link(
+                                    parsed["link"]
+                                ):
+                                    results.append(parsed)
+                                    new_items += 1
+
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to parse listing {i} in {city}: {e}",
+                                    exc_info=True,
+                                )
+                                continue
+
+                        logger.info(f"Page {page_num}: Found {new_items} new listings")
+
+                        # If no new items were found, we've reached the end
+                        if new_items == 0:
+                            logger.info(f"No new listings on page {page_num}, stopping")
+                            break
+
+                        page_num += 1
+                        self._human_sleep()
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error scraping {city} page {page_num}: {e}", exc_info=True
+                        )
                         break
-
-                    page_num += 1
-                    self._human_sleep()
-
-                except Exception as e:
-                    logger.exception(
-                        f"Error scraping {city} page {page_num}: {e}", exc_info=True
-                    )
-                    break
+            finally:
+                page.close()
 
         logger.info(f"Completed scraping {city}: {len(results)} listings found")
         return results

@@ -22,3 +22,8 @@ class Settings(DBSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
     SENTINEL_MASTER_NAME: str = "mymaster"
+
+    # Browser pool configuration
+    BROWSER_POOL_SIZE: int = 3
+    BROWSER_POOL_TIMEOUT: int = 30  # seconds
+    BROWSER_HEADLESS: bool = True

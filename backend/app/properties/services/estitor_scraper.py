@@ -4,12 +4,11 @@ import logging
 import random
 import re
 import time
-from collections.abc import Generator
-from contextlib import contextmanager
 from typing import Any, ClassVar, Protocol
 
-from playwright.sync_api import Browser, ElementHandle, Page, sync_playwright
+from playwright.sync_api import ElementHandle, Page
 
+from app.properties.services.browser_pool import IBrowserPool
 from app.utils.di import inject
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class IEstitorScraper(Protocol):
         ...
 
 
-@inject(alias=IEstitorScraper, singleton=True)
+@inject(alias=IEstitorScraper, singleton=False)
 class EstitorScraper(IEstitorScraper):
     """
     Scraper for Estitor.com property listings.
@@ -68,28 +67,9 @@ class EstitorScraper(IEstitorScraper):
     MAX_DELAY: float = 4.0
     PAGE_SCROLL_COUNT: int = 6
 
-    def __init__(self) -> None:
+    def __init__(self, browser_pool: IBrowserPool) -> None:
+        self.browser_pool = browser_pool
         self.seen_links: set[str] = set()
-
-    @contextmanager
-    def _create_browser(self) -> Generator[Browser]:
-        """Context manager for browser instance."""
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=self.HEADLESS)
-            try:
-                yield browser
-            finally:
-                browser.close()
-
-    @contextmanager
-    def _create_page(self) -> Generator[Page]:
-        """Context manager for page instance."""
-        with self._create_browser() as browser:
-            page = browser.new_page()
-            try:
-                yield page
-            finally:
-                page.close()
 
     def _human_sleep(
         self, min_s: float | None = None, max_s: float | None = None
@@ -211,61 +191,68 @@ class EstitorScraper(IEstitorScraper):
 
         logger.info(f"Starting Estitor scrape for {city}")
 
-        with self._create_page() as page:
-            while True:
-                # Build URL with pagination
-                url = f"{self.BASE_URL}/me/nekretnine/namjena-prodaja/{city_slug}"
-                if page_num > 1:
-                    url += f"/strana-{page_num}"
+        with self.browser_pool.get_browser() as browser:
+            page = browser.new_page()
+            try:
+                while True:
+                    # Build URL with pagination
+                    url = f"{self.BASE_URL}/me/nekretnine/namjena-prodaja/{city_slug}"
+                    if page_num > 1:
+                        url += f"/strana-{page_num}"
 
-                logger.info(f"Scraping {city} - Page {page_num}: {url}")
+                    logger.info(f"Scraping {city} - Page {page_num}: {url}")
 
-                try:
-                    self._navigate_to_url(page, url)
-
-                    # Wait for listings to load
                     try:
-                        page.wait_for_selector("article", timeout=10000)
-                    except Exception:
-                        logger.info(
-                            f"No more listings found for {city} at page {page_num}"
+                        self._navigate_to_url(page, url)
+
+                        # Wait for listings to load
+                        try:
+                            page.wait_for_selector("article", timeout=10000)
+                        except Exception:
+                            logger.info(
+                                f"No more listings found for {city} at page {page_num}"
+                            )
+                            break
+
+                        # Add delay and scroll to trigger lazy loading
+                        self._human_sleep(2, 4)
+                        self._scroll_page(page)
+
+                        # Get all listing elements
+                        listings = page.query_selector_all("article")
+                        if not listings:
+                            logger.info(
+                                f"No listings found on page {page_num} for {city}"
+                            )
+                            break
+
+                        logger.debug(
+                            f"Found {len(listings)} listing elements on page {page_num}"
+                        )
+
+                        # Parse each listing
+                        for listing in listings:
+                            try:
+                                parsed = self.parse_listing(listing, city)
+                                if parsed:
+                                    results.append(parsed)
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to parse listing in {city}: {e}",
+                                    exc_info=True,
+                                )
+                                continue
+
+                        page_num += 1
+                        self._human_sleep(3, 6)
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error scraping {city} page {page_num}: {e}", exc_info=True
                         )
                         break
-
-                    # Add delay and scroll to trigger lazy loading
-                    self._human_sleep(2, 4)
-                    self._scroll_page(page)
-
-                    # Get all listing elements
-                    listings = page.query_selector_all("article")
-                    if not listings:
-                        logger.info(f"No listings found on page {page_num} for {city}")
-                        break
-
-                    logger.debug(
-                        f"Found {len(listings)} listing elements on page {page_num}"
-                    )
-
-                    # Parse each listing
-                    for listing in listings:
-                        try:
-                            parsed = self.parse_listing(listing, city)
-                            if parsed:
-                                results.append(parsed)
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to parse listing in {city}: {e}", exc_info=True
-                            )
-                            continue
-
-                    page_num += 1
-                    self._human_sleep(3, 6)
-
-                except Exception as e:
-                    logger.exception(
-                        f"Error scraping {city} page {page_num}: {e}", exc_info=True
-                    )
-                    break
+            finally:
+                page.close()
 
         logger.info(f"Completed scraping {city}: {len(results)} listings found")
         return results

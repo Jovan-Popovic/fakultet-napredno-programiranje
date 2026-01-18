@@ -227,5 +227,5 @@ class PropertyRepository(IPropertyRepository):
             return affected_rows
 
         except Exception as e:
-            logger.exception(f"Bulk upsert failed: {e}")
+            logger.error(f"Bulk upsert failed: {e}")
             raise

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-@celery_app.task()
+@celery_app.task(rate_limit="10/m")
 @db_session_handler
 def scrape_estitor_city(city: str, city_slug: str) -> dict[str, Any]:
     """
@@ -115,7 +115,7 @@ def scrape_all_estitor_cities() -> dict[str, Any]:
 # ============================================================================
 
 
-@celery_app.task()
+@celery_app.task(rate_limit="10/m")
 @db_session_handler
 def scrape_realitica_city(city: str, city_slug: str) -> dict[str, Any]:
     """

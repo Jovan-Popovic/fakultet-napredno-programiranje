@@ -14,7 +14,7 @@ from app.celery.serializers import register_pydantic_serializer
 from app.config.settings import DBSettings, Settings
 from app.database.import_sqlalchemy_models import load_all_models
 from app.properties.services import estitor_scraper, realitica_scraper  # noqa: F401
-from app.utils.di import add_to_di_container
+from app.utils.di import add_to_di_container, get_from_di_container
 from app.utils.logging import set_up_logging
 
 logger = getLogger(__name__)
@@ -122,6 +122,20 @@ _wire_di()
 @signals.worker_process_init.connect
 def on_worker_process_init(**_: Any) -> None:
     _wire_di()
+
+
+@signals.worker_process_shutdown.connect
+def on_worker_shutdown(**_: Any) -> None:
+    """Cleanup browser pool when worker shuts down."""
+    logger.info("Worker shutting down, closing browser pool")
+    try:
+        from app.properties.services.browser_pool import IBrowserPool
+
+        pool = get_from_di_container(IBrowserPool)
+        pool.close_all()
+        logger.info("Browser pool closed successfully")
+    except Exception as e:
+        logger.exception(f"Error closing browser pool: {e}")
 
 
 @signals.setup_logging.connect

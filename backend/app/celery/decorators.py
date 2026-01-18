@@ -79,7 +79,7 @@ def chord_safe[**P, R](
                 # Return the actual result from the function
                 return cast(R, result)
             except Exception as e:
-                logger.exception(f"Task {fn.__name__} failed: {e}", exc_info=True)
+                logger.error(f"Task {fn.__name__} failed: {e}", exc_info=True)
                 # Only return default_return when an exception occurs
                 return cast(R, default_return)
 
