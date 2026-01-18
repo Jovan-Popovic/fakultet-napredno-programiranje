@@ -30,6 +30,7 @@ class PropertyResponse(CamelCaseModel):
     # Display fields (formatted for UI)
     price_display: str
     area_display: str | None
+    image_url: str | None
 
     # Timestamps
     created_at: datetime
@@ -73,6 +74,7 @@ class PropertyResponse(CamelCaseModel):
             rooms=property.rooms,
             price_display=price_display,
             area_display=area_display,
+            image_url=property.image_url,
             created_at=property.created_at,
             updated_at=property.updated_at,
         )

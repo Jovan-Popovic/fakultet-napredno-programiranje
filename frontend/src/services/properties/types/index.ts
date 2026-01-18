@@ -19,6 +19,7 @@ export type PropertyResponseRecord = {
   rooms: number | null;
   priceDisplay: string;
   areaDisplay: string | null;
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
