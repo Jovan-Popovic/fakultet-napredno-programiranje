@@ -13,6 +13,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 
 from alembic import op
+from app.database.enum import Enum
 
 # revision identifiers, used by Alembic.
 revision: str = "2ecea7d78926"
@@ -28,7 +29,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column(
             "source",
-            sa.Enum("estitor", "realitica", name="propertysource"),
+            Enum("estitor", "realitica", name="propertysource"),
             nullable=False,
         ),
         sa.Column("link", sa.String(length=2048), nullable=False),
@@ -37,7 +38,7 @@ def upgrade() -> None:
         sa.Column("title", sa.Text(), nullable=False),
         sa.Column(
             "property_type",
-            sa.Enum(
+            Enum(
                 "Stan",
                 "Kuća",
                 "Garsonjera",
@@ -56,9 +57,9 @@ def upgrade() -> None:
         sa.Column("area_sqm", sa.Numeric(precision=10, scale=2), nullable=True),
         sa.Column("rooms_raw", sa.String(length=255), nullable=True),
         sa.Column("rooms", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+        sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+        sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_properties")),
         sa.UniqueConstraint("link", name=op.f("uq_properties_link")),
     )
@@ -101,8 +102,8 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_properties_area_sqm"), table_name="properties")
     op.drop_index("ix_properties_area_rooms", table_name="properties")
     op.drop_table("properties")
-    sa.Enum("estitor", "realitica", name="propertysource").drop(op.get_bind())
-    sa.Enum(
+    Enum("estitor", "realitica", name="propertysource").drop(op.get_bind())
+    Enum(
         "Stan",
         "Kuća",
         "Garsonjera",

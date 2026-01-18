@@ -1,10 +1,13 @@
 """Browser pool for resource-efficient web scraping."""
 
+from __future__ import annotations
+
 import logging
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
 from queue import Empty, Full, Queue
-from typing import Generator, Protocol
+from typing import Protocol
 
 from playwright.sync_api import Browser, PlaywrightContextManager, sync_playwright
 
@@ -18,7 +21,7 @@ class IBrowserPool(Protocol):
     """Protocol for browser pool implementations."""
 
     @contextmanager
-    def get_browser(self) -> Generator[Browser, None, None]:
+    def get_browser(self) -> Generator[Browser]:
         """Checkout browser from pool, yield for use, auto-return on exit."""
         ...
 
@@ -60,7 +63,7 @@ class BrowserPool:
         )
 
     @contextmanager
-    def get_browser(self) -> Generator[Browser, None, None]:
+    def get_browser(self) -> Generator[Browser]:
         """Checkout browser from pool, yield for use, auto-return on exit.
 
         This is a context manager that ensures the browser is always returned

@@ -117,8 +117,8 @@ def get_property(property_id: int) -> PropertyResponse:
     """
     service = get_from_di_container(IPropertyService)
 
-    property = service.get_property(property_id)
-    if not property:
+    property_obj = service.get_property(property_id)
+    if not property_obj:
         raise HTTPException(
             status_code=404,
             detail={
@@ -127,4 +127,4 @@ def get_property(property_id: int) -> PropertyResponse:
             },
         )
 
-    return PropertyResponse.from_model(property)
+    return PropertyResponse.from_model(property_obj)

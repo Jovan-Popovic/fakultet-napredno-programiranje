@@ -134,8 +134,8 @@ def on_worker_shutdown(**_: Any) -> None:
         pool = get_from_di_container(IBrowserPool)
         pool.close_all()
         logger.info("Browser pool closed successfully")
-    except Exception as e:
-        logger.exception(f"Error closing browser pool: {e}")
+    except Exception:
+        logger.exception("Error closing browser pool")
 
 
 @signals.setup_logging.connect

@@ -84,20 +84,16 @@ class PropertyRepository(IPropertyRepository):
         )
         return self.session.execute(stmt).scalar_one_or_none()
 
-    def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
+    def _build_filter_conditions(self, filters: PropertyFilters) -> list[Any]:
         """
-        List properties with filtering and pagination.
+        Build filter conditions from PropertyFilters.
 
         Args:
-            filters: PropertyFilters with filter criteria and pagination
+            filters: PropertyFilters with filter criteria
 
         Returns:
-            Tuple of (list of properties, total count)
+            List of SQLAlchemy filter conditions
         """
-        # Build base query
-        stmt = select(Property).where(Property.deleted_at.is_(None))
-
-        # Apply filters
         conditions: list[Any] = []
 
         if filters.cities:
@@ -134,6 +130,23 @@ class PropertyRepository(IPropertyRepository):
                 )
             )
 
+        return conditions
+
+    def list_properties(self, filters: PropertyFilters) -> tuple[list[Property], int]:
+        """
+        List properties with filtering and pagination.
+
+        Args:
+            filters: PropertyFilters with filter criteria and pagination
+
+        Returns:
+            Tuple of (list of properties, total count)
+        """
+        # Build base query
+        stmt = select(Property).where(Property.deleted_at.is_(None))
+
+        # Apply filters
+        conditions = self._build_filter_conditions(filters)
         if conditions:
             stmt = stmt.where(and_(*conditions))
 
@@ -226,6 +239,6 @@ class PropertyRepository(IPropertyRepository):
             logger.info(f"Bulk upserted {affected_rows} properties")
             return affected_rows
 
-        except Exception as e:
-            logger.error(f"Bulk upsert failed: {e}")
+        except Exception:
+            logger.exception("Bulk upsert failed")
             raise
