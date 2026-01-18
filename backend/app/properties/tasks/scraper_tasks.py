@@ -213,7 +213,7 @@ def scrape_all_realitica_cities() -> dict[str, Any]:
     schedule=crontab(hour=2, minute=0),  # Run daily at 2:00 AM UTC
 )
 @celery_app.task()
-def run_all_scrapers_scheduled() -> dict[str, Any]:
+def run_all_scrapers() -> dict[str, Any]:
     """
     Scheduled task to run all scrapers daily.
 

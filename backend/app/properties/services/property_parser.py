@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Protocol
+from typing import ClassVar, Protocol
 
 from app.properties.models.property import PropertyType
 from app.utils.di import inject
@@ -40,7 +40,7 @@ class PropertyParser(IPropertyParser):
     """
 
     # Room count mapping for Serbian/Montenegrin terms
-    ROOM_MAPPING = {
+    ROOM_MAPPING: ClassVar = {
         "garsonjera": 1,
         "jednosoban": 1,
         "dvosoban": 2,
@@ -51,7 +51,7 @@ class PropertyParser(IPropertyParser):
     }
 
     # Property type mapping
-    TYPE_MAPPING = {
+    TYPE_MAPPING: ClassVar = {
         "stan": PropertyType.STAN,
         "kuća": PropertyType.KUCA,
         "kuca": PropertyType.KUCA,

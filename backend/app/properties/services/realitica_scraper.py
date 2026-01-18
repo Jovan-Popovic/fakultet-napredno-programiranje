@@ -194,7 +194,7 @@ class RealiticaScraper(IRealiticaScraper):
                     self._human_sleep()
 
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         f"Error scraping {city} page {page_num}: {e}", exc_info=True
                     )
                     break
@@ -216,6 +216,7 @@ class RealiticaScraper(IRealiticaScraper):
         - Property type (tip)
         - Location (lokacija)
         - Link
+        - Featured image URL (slika_url)
 
         Args:
             div: Playwright Locator for the listing container
@@ -239,6 +240,14 @@ class RealiticaScraper(IRealiticaScraper):
             if not link:
                 logger.debug("Listing missing link, skipping")
                 return None
+
+            # Extract featured image URL
+            image_url = ""
+            img_locators = div.locator("img")
+            if img_locators.count() > 0:
+                src = img_locators.first.get_attribute("src")
+                if src:
+                    image_url = src
 
             # Extract title (naslov) - look for "prodaje se" pattern
             naslov = ""
@@ -289,6 +298,7 @@ class RealiticaScraper(IRealiticaScraper):
                 "tip": tip,
                 "lokacija": lokacija,
                 "link": link,
+                "slika_url": image_url,
             }
 
         except Exception as e:

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, timezone
-from typing import Optional
+
+from sqlalchemy import Index, Numeric, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 from app.database.enum import Enum
-from sqlalchemy import Index, Numeric, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
 
 
 class PropertySource(str, enum.Enum):
@@ -44,31 +44,34 @@ class Property(Base):
     # Unique identifier - the listing URL
     link: Mapped[str] = mapped_column(String(2048), unique=True, nullable=False)
 
+    # Featured image URL
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
     # Location data
     city: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     location: Mapped[str] = mapped_column(String(512), nullable=False)
 
     # Property details
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    property_type: Mapped[Optional[PropertyType]] = mapped_column(
+    property_type: Mapped[PropertyType | None] = mapped_column(
         Enum(PropertyType), nullable=True, index=True
     )
 
     # Price - dual storage (raw string + parsed numeric)
     price_raw: Mapped[str] = mapped_column(String(255), nullable=False)
-    price_eur: Mapped[Optional[float]] = mapped_column(
+    price_eur: Mapped[float | None] = mapped_column(
         Numeric(precision=12, scale=2), nullable=True, index=True
     )
 
     # Area - dual storage (raw string + parsed numeric)
-    area_raw: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    area_sqm: Mapped[Optional[float]] = mapped_column(
+    area_raw: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    area_sqm: Mapped[float | None] = mapped_column(
         Numeric(precision=10, scale=2), nullable=True, index=True
     )
 
     # Rooms - dual storage (raw string + parsed numeric)
-    rooms_raw: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    rooms: Mapped[Optional[int]] = mapped_column(nullable=True)
+    rooms_raw: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    rooms: Mapped[int | None] = mapped_column(nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -79,7 +82,7 @@ class Property(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Composite indexes for common query patterns
     __table_args__ = (

@@ -262,7 +262,7 @@ class EstitorScraper(IEstitorScraper):
                     self._human_sleep(3, 6)
 
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         f"Error scraping {city} page {page_num}: {e}", exc_info=True
                     )
                     break
@@ -278,6 +278,7 @@ class EstitorScraper(IEstitorScraper):
         - Title and metadata (area, rooms, type, location)
         - Price
         - Link to full listing
+        - Featured image URL
 
         Args:
             element: Playwright ElementHandle for the article element
@@ -310,6 +311,14 @@ class EstitorScraper(IEstitorScraper):
             # Build absolute URL
             link = self._build_absolute_url(self.BASE_URL, href)
 
+            # Extract featured image URL
+            image_url = None
+            img_el = element.query_selector("img")
+            if img_el:
+                src = img_el.get_attribute("src")
+                if src:
+                    image_url = self._build_absolute_url(self.BASE_URL, src)
+
             # Skip duplicates
             if self._is_duplicate_link(link):
                 return None
@@ -329,6 +338,7 @@ class EstitorScraper(IEstitorScraper):
                 "tip": prop_type,
                 "lokacija": location,
                 "link": link,
+                "slika_url": image_url,
             }
 
         except Exception as e:

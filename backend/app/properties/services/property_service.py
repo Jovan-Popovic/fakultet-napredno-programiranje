@@ -93,6 +93,7 @@ class PropertyService(IPropertyService):
                 - tip: property type string
                 - lokacija: location
                 - link: unique URL
+                - slika_url: featured image URL (optional)
             source: PropertySource enum
 
         Returns:
@@ -109,6 +110,7 @@ class PropertyService(IPropertyService):
         return {
             "source": source,
             "link": scraped_data["link"],
+            "image_url": scraped_data.get("slika_url"),
             "city": scraped_data["grad"],
             "location": scraped_data["lokacija"],
             "title": scraped_data["naslov"],

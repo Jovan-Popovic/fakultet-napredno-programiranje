@@ -4,12 +4,13 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from app.database.session_factory import ISessionFactory
-from app.properties.models.property import Property, PropertySource, PropertyType
-from app.utils.di import inject
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+
+from app.database.session_factory import ISessionFactory
+from app.properties.models.property import Property, PropertySource, PropertyType
+from app.utils.di import inject
 
 logger = logging.getLogger(__name__)
 
@@ -226,5 +227,5 @@ class PropertyRepository(IPropertyRepository):
             return affected_rows
 
         except Exception as e:
-            logger.error(f"Bulk upsert failed: {e}")
+            logger.exception(f"Bulk upsert failed: {e}")
             raise

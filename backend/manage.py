@@ -196,6 +196,18 @@ class CeleryFlower(BaseCommand):
         )
 
 
+class Scrape(BaseCommand):
+    name = "scrape"
+    description = "run all property scrapers (Estitor + Realitica)"
+
+    def handle(self) -> None:
+        from app.properties.tasks.scraper_tasks import run_all_scrapers
+
+        logger.info("Starting all property scrapers...")
+        result = run_all_scrapers()
+        logger.info(f"Scraping result: {result}")
+
+
 def configure_settings() -> None:
     # Configure logging
     basicConfig(level=INFO)
@@ -222,6 +234,7 @@ def main(args: list[str]) -> None:
             CeleryBeat,
             CeleryWorker,
             CeleryFlower,
+            Scrape,
         ],
         description="Project management commands",
     ).execute(args)

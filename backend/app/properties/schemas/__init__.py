@@ -5,4 +5,4 @@ from app.properties.schemas.property_schemas import (
     PropertyResponse,
 )
 
-__all__ = ["PropertyResponse", "PropertyListResponse"]
+__all__ = ["PropertyListResponse", "PropertyResponse"]

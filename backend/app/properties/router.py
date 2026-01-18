@@ -3,13 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
+from fastapi import HTTPException, Query
+
 from app.database.session_handler import DBAPIRouter
 from app.properties.models.property import PropertySource, PropertyType
 from app.properties.repositories import PropertyFilters
 from app.properties.schemas import PropertyListResponse, PropertyResponse
 from app.properties.services.property_service import IPropertyService
 from app.utils.di import get_from_di_container
-from fastapi import HTTPException, Query
 
 logger = logging.getLogger(__name__)
 
