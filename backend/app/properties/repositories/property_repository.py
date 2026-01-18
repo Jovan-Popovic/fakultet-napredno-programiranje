@@ -43,6 +43,10 @@ class IPropertyRepository(Protocol):
         """List properties with filtering and pagination. Returns (items, total_count)."""
         ...
 
+    def get_unique_cities(self) -> list[str]:
+        """Get all unique cities from non-deleted properties."""
+        ...
+
     def upsert(self, property_data: dict[str, Any]) -> Property:
         """Insert or update property by unique link."""
         ...
@@ -165,6 +169,21 @@ class PropertyRepository(IPropertyRepository):
         properties = list(self.session.execute(stmt).scalars().all())
 
         return properties, total_count
+
+    def get_unique_cities(self) -> list[str]:
+        """
+        Get all unique cities from non-deleted properties.
+
+        Returns:
+            List of unique city names sorted alphabetically
+        """
+        stmt = (
+            select(Property.city)
+            .where(Property.deleted_at.is_(None))
+            .distinct()
+            .order_by(Property.city)
+        )
+        return list(self.session.execute(stmt).scalars().all())
 
     def upsert(self, property_data: dict[str, Any]) -> Property:
         """

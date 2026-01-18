@@ -55,3 +55,10 @@ export type GetPaginatedPropertiesResponseRecord = ApiPaginationResponseRecord<P
  * Response record for single property
  */
 export type GetPropertyResponseRecord = PropertyResponseRecord;
+
+/**
+ * Response record for cities list
+ */
+export type GetCitiesResponseRecord = {
+  cities: string[];
+};

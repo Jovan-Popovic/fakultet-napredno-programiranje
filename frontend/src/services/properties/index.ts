@@ -1,4 +1,5 @@
 import type {
+  GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
   GetPropertyResponseRecord,
@@ -30,6 +31,13 @@ export type PropertiesServiceType = {
    * @returns {Promise<GetPropertyResponseRecord>} A promise to the property.
    */
   getProperty(id: number): Promise<GetPropertyResponseRecord>;
+
+  /**
+   * Retrieves all unique cities.
+   *
+   * @returns {Promise<GetCitiesResponseRecord>} A promise to the list of cities.
+   */
+  getCities(): Promise<GetCitiesResponseRecord>;
 };
 
 class PropertiesService implements PropertiesServiceType {
@@ -44,6 +52,12 @@ class PropertiesService implements PropertiesServiceType {
   async getProperty(id: number): Promise<GetPropertyResponseRecord> {
     return await callApi({
       url: `/properties/${id}`,
+    });
+  }
+
+  async getCities(): Promise<GetCitiesResponseRecord> {
+    return await callApi({
+      url: `/properties/cities`,
     });
   }
 }

@@ -40,7 +40,7 @@ export const PropertiesList: FC = () => {
   const [selectedProperty, setSelectedProperty] = useState<PropertyResponseRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data, isLoading, isFetching, isError, error } = usePaginatedProperties({
+  const { data, isLoading, isFetching, isError, error, refetch } = usePaginatedProperties({
     ...filters,
     page,
     size: pageSize,
@@ -79,6 +79,7 @@ export const PropertiesList: FC = () => {
     <div className="space-y-6">
       <PropertyFilters
         onFiltersChange={handleFiltersChange}
+        onRefresh={() => void refetch()}
         initialFilters={filters}
         isLoading={isFetching}
       />

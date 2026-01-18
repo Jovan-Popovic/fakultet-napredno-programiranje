@@ -8,7 +8,11 @@ from fastapi import HTTPException, Query
 from app.database.session_handler import DBAPIRouter
 from app.properties.models.property import PropertySource, PropertyType
 from app.properties.repositories import PropertyFilters
-from app.properties.schemas import PropertyListResponse, PropertyResponse
+from app.properties.schemas import (
+    CitiesResponse,
+    PropertyListResponse,
+    PropertyResponse,
+)
 from app.properties.services.property_service import IPropertyService
 from app.utils.di import get_from_di_container
 
@@ -106,6 +110,19 @@ def list_properties(
         page=page,
         size=size,
     )
+
+
+@router.get("/cities", response_model=CitiesResponse)
+def get_cities() -> CitiesResponse:
+    """
+    Get all unique cities from properties.
+
+    Returns a list of unique city names sorted alphabetically.
+    Useful for populating filter dropdowns.
+    """
+    service = get_from_di_container(IPropertyService)
+    cities = service.get_unique_cities()
+    return CitiesResponse(cities=cities)
 
 
 @router.get("/{property_id}", response_model=PropertyResponse)

@@ -23,6 +23,10 @@ class IPropertyService(Protocol):
         """List properties with filters."""
         ...
 
+    def get_unique_cities(self) -> list[str]:
+        """Get all unique cities from non-deleted properties."""
+        ...
+
     def save_scraped_property(
         self, scraped_data: dict[str, Any], source: PropertySource
     ) -> Property:
@@ -76,6 +80,15 @@ class PropertyService(IPropertyService):
             Tuple of (list of properties, total count)
         """
         return self.repository.list_properties(filters)
+
+    def get_unique_cities(self) -> list[str]:
+        """
+        Get all unique cities from non-deleted properties.
+
+        Returns:
+            List of unique city names sorted alphabetically
+        """
+        return self.repository.get_unique_cities()
 
     def _transform_scraped_data(
         self, scraped_data: dict[str, Any], source: PropertySource

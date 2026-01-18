@@ -119,3 +119,9 @@ class PropertyListResponse(CamelCaseModel):
             size=size,
             pages=pages,
         )
+
+
+class CitiesResponse(CamelCaseModel):
+    """Response schema for cities list."""
+
+    cities: list[str]

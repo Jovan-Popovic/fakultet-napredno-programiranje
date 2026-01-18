@@ -93,7 +93,6 @@ lint.select = [
   "UP",
   "RUF",
   "TID",
-  "FAST",
   "TRY",
   "A",
   "C4",
@@ -112,7 +111,7 @@ lint.select = [
   "FURB",
 ]
 lint.ignore = ["UP017", "E501", "A002", "TRY300", "SIM107"]
-target-version = "py313"
+target-version = "py312"
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]

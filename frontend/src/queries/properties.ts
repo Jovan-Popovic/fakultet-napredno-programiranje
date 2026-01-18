@@ -12,12 +12,13 @@ import type { ApiErrorResponseRecord } from "@/api/types/errors";
 import { ReactQueryKeys } from "@/queries/keys/queries";
 import { propertiesService } from "@/services/properties";
 import type {
+  GetCitiesResponseRecord,
   GetPaginatedPropertiesRequestRecord,
   GetPaginatedPropertiesResponseRecord,
   GetPropertyResponseRecord,
 } from "@/services/properties/types";
 
-const { getPaginatedProperties, getProperty } = propertiesService;
+const { getPaginatedProperties, getProperty, getCities } = propertiesService;
 
 export const usePaginatedProperties = (
   data: GetPaginatedPropertiesRequestRecord,
@@ -39,5 +40,16 @@ export const useProperty = (
     queryKey: [ReactQueryKeys.PROPERTIES, id],
     queryFn: async () => await getProperty(id),
     refetchOnWindowFocus: false,
+    ...options,
+  });
+
+export const useCities = (
+  options?: QueryOptionsRecord<GetCitiesResponseRecord, ApiErrorResponseRecord>
+): UseQueryResult<GetCitiesResponseRecord, ApiErrorResponseRecord> =>
+  useQuery({
+    queryKey: [ReactQueryKeys.PROPERTIES, "cities"],
+    queryFn: async () => await getCities(),
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 60, // 1 hour
     ...options,
   });
